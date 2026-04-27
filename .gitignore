@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Project specific
+posture_history.db
+reports/*.png
+settings.json
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,6 @@
+opencv-python
+mediapipe
+PyQt6
+keyboard
+win10toast
+matplotlib
