@@ -315,11 +315,13 @@ class PoseWorker(QThread):
                         if self.bad_posture_start is None: self.bad_posture_start = time.time()
                         elapsed = time.time() - self.bad_posture_start
                         if elapsed >= self.alert_delay:
-                            msg = LANGUAGES[self.lang]['status_tilt'] if is_yanal else (LANGUAGES[self.lang]['status_head_up'] if is_boyun else (LANGUAGES[self.lang]['status_too_close'] if is_yakin else LANGUAGES[self.lang]['status_straight']))
+                            texts = LANGUAGES[self.lang]
+                            if is_yanal: msg = texts['status_tilt']
+                            elif is_kambur: msg = texts['status_straight']
+                            elif is_boyun: msg = texts['status_head_up']
+                            else: msg = texts['status_too_close']
+                            
                             self.status_signal.emit(msg, "red")
-                            if self.ghost_mode and (time.time() - self.last_toast_time > 10):
-                                toaster.show_toast("Smart Posture AI", msg, duration=3, threaded=True)
-                                self.last_toast_time = time.time()
                         else:
                             self.status_signal.emit(f"{LANGUAGES[self.lang]['status_fix']} ({int(self.alert_delay-elapsed)}s)", "yellow")
                     else:
@@ -677,14 +679,7 @@ class PostureWidget(QWidget):
         self.label = QLabel("BAŞLATILIYOR...")
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        # HP Barı (İnce Çizgi)
-        self.hp_bar = QWidget()
-        self.hp_bar.setFixedHeight(4)
-        self.hp_bar.setFixedWidth(280)
-        self.hp_bar.setStyleSheet("background-color: #27ae60; border-radius: 2px;")
-        
         self.layout.addWidget(self.label)
-        self.layout.addWidget(self.hp_bar, alignment=Qt.AlignmentFlag.AlignCenter)
         self.setLayout(self.layout)
         
         # Göz Jimnastiği için hareketli nokta
@@ -708,11 +703,6 @@ class PostureWidget(QWidget):
         self.label.setText(texts['water_break'])
         QTimer.singleShot(5000, lambda: self.label.setText(self.parent_app.worker.last_status))
 
-    def update_hp(self, val):
-        width = int(2.8 * val)
-        color = "#27ae60" if val > 70 else ("#f1c40f" if val > 30 else "#e74c3c")
-        self.hp_bar.setFixedWidth(width)
-        self.hp_bar.setStyleSheet(f"background-color: {color}; border-radius: 2px;")
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -815,7 +805,6 @@ class PostureApp:
         signals.calibrate_signal.connect(self.calibrate_now)
         
         self.worker.status_signal.connect(self.widget.update_widget)
-        self.worker.hp_signal.connect(self.widget.update_hp)
         self.worker.water_signal.connect(self.widget.show_water_alert)
         
         self.tray = QSystemTrayIcon(self.app.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon), self.app)
